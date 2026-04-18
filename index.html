@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title> 노댕제작소 : 우리 안심 키링</title>
+  <title>노댕제작소 : 우리 안심 키링</title>
   <meta name="theme-color" content="#f6efe6" />
   <style>
     :root {
@@ -438,7 +438,7 @@
         <span class="dot"></span>
         안내
       </div>
-      <div id="status" class="status-box"> 
+      <div id="status" class="status-box">
 버튼을 누르면 보호자에게 빠르게 연결할 수 있어요.
 위치 전송은 휴대폰의 위치 권한 허용이 필요해요.
       </div>
@@ -476,10 +476,6 @@
   </div>
 
   <script>
-    /* =========================
-       1. 여기만 수정해서 사용하세요
-    ========================== */
-
     const data = {
       childName: "노하준",
       childAge: "3세",
@@ -498,10 +494,6 @@
       extraInfo: "아이가 길을 잃었거나 보호가 필요한 상황이라면, 위치 보내기 버튼을 눌러 보호자에게 현재 위치를 전달해 주세요."
     };
 
-    /* =========================
-       2. 화면 반영
-    ========================== */
-
     document.getElementById("childName").textContent = data.childName;
     document.getElementById("childAge").textContent = data.childAge;
     document.getElementById("childGender").textContent = data.childGender;
@@ -517,10 +509,6 @@
 
     document.getElementById("callMomBtn").href = `tel:${data.momPhone}`;
     document.getElementById("callDadBtn").href = `tel:${data.dadPhone}`;
-
-    /* =========================
-       3. 기능
-    ========================== */
 
     const statusBox = document.getElementById("status");
     const guardianInfoSection = document.getElementById("guardianInfoSection");
@@ -565,6 +553,17 @@
       });
     }
 
+    function formatPhone(phone) {
+      const onlyNum = String(phone).replace(/[^0-9]/g, "");
+      if (onlyNum.length === 11) {
+        return onlyNum.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+      }
+      if (onlyNum.length === 10) {
+        return onlyNum.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+      }
+      return phone;
+    }
+
     function buildLocationMessage(lat, lng) {
       const mapLink = `https://maps.google.com/?q=${lat},${lng}`;
 
@@ -580,15 +579,12 @@ ${data.momName}: ${formatPhone(data.momPhone)}
 ${data.dadName}: ${formatPhone(data.dadPhone)}`;
     }
 
-    function formatPhone(콜) {
-      const onlyNum = phone.replace(/[^0-9]/g, "");
-      if (onlyNum.length === 11) {
-        return onlyNum.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
-      }
-      if (onlyNum.length === 10) {
-        return onlyNum.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
-      }
-      return phone;
+    function getSmsRecipients() {
+      const phones = [data.momPhone, data.dadPhone]
+        .map(v => String(v || "").replace(/[^0-9]/g, ""))
+        .filter(Boolean);
+
+      return [...new Set(phones)].join(",");
     }
 
     async function sendLocationSMS() {
@@ -599,14 +595,19 @@ ${data.dadName}: ${formatPhone(data.dadPhone)}`;
         const lat = position.coords.latitude.toFixed(6);
         const lng = position.coords.longitude.toFixed(6);
         const message = buildLocationMessage(lat, lng);
+        const recipients = getSmsRecipients();
 
-        setStatus("문자앱을 열고 있어요.\n전송 버튼만 눌러 보호자에게 보내주세요.");
+        if (!recipients) {
+          setStatus("문자를 받을 보호자 연락처가 없어요.");
+          return;
+        }
 
-        const primaryPhone = data.momPhone || data.dadPhone;
-        const smsUrl = `sms:${primaryPhone}?body=${encodeURIComponent(message)}`;
+        setStatus("문자앱을 열고 있어요.\n전송 버튼만 누르면 보호자에게 보낼 수 있어요.");
+
+        const smsUrl = `sms:${recipients}?body=${encodeURIComponent(message)}`;
         window.location.href = smsUrl;
       } catch (error) {
-        setStatus(error.message);
+        setStatus(error.message || "문자 앱을 열지 못했어요.");
       }
     }
   </script>
